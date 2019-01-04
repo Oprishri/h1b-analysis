@@ -1,0 +1,1 @@
+hdfs dfs -cat /user/my1843/project/clean/part-r-00000 | head -n 10

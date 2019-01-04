@@ -1,0 +1,24 @@
+Under hdfs dfs make sure it have
+2 output from the mapreduce clean steps under folder
+/user/my1843/project/clean/ 
+
+// merge 
+create external table data20(
+case_num string,
+case_status string,
+submission_date bigint,
+decision_date bigint,
+employer_start bigint,
+employer_end bigint,
+employer_name string,
+employer_state string,
+employer_city string,
+job_title string,
+wage_rate double,
+wage_unit string)
+row format delimited fields terminated by '\t'
+location '/user/my1843/project/clean/';
+
+describe data20;
+
+select * from data20 limit 100;

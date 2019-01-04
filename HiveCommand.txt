@@ -1,0 +1,90 @@
+!connect jdbc:hive2://babar.es.its.nyu.edu:10000/ 
+use yb1059;
+show tables;
+
+drop table if exists data1;
+create external table data1(case_num string, case_status string, submission_date bigint, decision_date bigint, employer_start bigint, employer_end bigint, employer_name string, employer_state string, employer_city string, job_title string, wage_rate double, wage_unit string, occupation double) row format delimited fields terminated by '\t'  location '/user/yb1059/project/MergedData';
+select * from data1 limit 3;
+
+describe data1;
+select distinct case_status from data1;
+select distinct occupation from data1;
+select count(*) from data1;  //919168
+
+drop table if exists certiData;
+create table certiData as select * from data1 where case_status rlike 'certified';
+drop table if exists denyData;
+create table denyData as select * from data1 where case_status rlike 'denied';
+
+select * from certiData limit 3;
+select * from denyData limit 3;
+select count(*) from certiData;  //909728
+select count(*) from denyData;  //9440
+
+//build new data2 table with new columns depicting length of visa processing duration
+drop table if exists data2;
+CREATE TABLE data2 AS SELECT case_num, case_status, decision_date,submission_date,((floor(decision_date/10000)-floor(submission_date/10000))*365+((floor(decision_date/100))%100-(floor(submission_date/100))%100)*30+(decision_date%100-submission_date%100)) AS decisionTime,employer_start,employer_end, ((floor(employer_end/10000)-floor(employer_start/10000))*365+((floor(employer_end/100))%100-(floor(employer_start/100))%100)*30+(employer_end%100-employer_start%100)) AS employTime, employer_name, employer_state, employer_city, job_title, wage_rate, wage_unit,occupation FROM data1 WHERE wage_rate >= 0;
+describe data2;
+select * from data2 limit 3;
+
+// ANALYZE IN HIVE SECTION
+//analyze processing time
+drop table if exists ProcessingLength;
+CREATE TABLE ProcessingLength AS SELECT case_status, decisionTime, employTime FROM data2 ORDER BY decisionTime;
+describe ProcessingLength;
+select * from ProcessingLength limit 3;
+drop table if exists ProcessingLengthDistribution;
+CREATE TABLE ProcessingLengthDistribution AS SELECT case_status, decisionTime, COUNT(*) FROM ProcessingLength GROUP BY decisionTime,case_status SORT BY decisionTime;
+select * from ProcessingLengthDistribution;
+
+//analyze employing time
+drop table if exists EmployLength;
+CREATE TABLE EmployLength AS SELECT case_status, decisionTime, employTime FROM data2 WHERE employTime >= 0 ORDER BY employTime;
+describe EmployLength;
+select * from EmployLength limit 3;
+drop table if exists EmployLengthDistribution;
+CREATE TABLE EmployLengthDistribution AS SELECT case_status, employTime, COUNT(*) FROM EmployLength GROUP BY employTime,case_status SORT BY employTime;
+select * from EmployLengthDistribution;
+
+
+
+//analyze states distribution
+drop table if exists statesDistribution1;
+CREATE TABLE statesDistribution1 AS SELECT employer_state, COUNT(*) FROM certiData GROUP BY employer_state;
+ALTER TABLE statesDistribution1 CHANGE `_c1` countcerti BIGINT;
+drop table if exists statesDistribution2;
+CREATE TABLE statesDistribution2 AS SELECT employer_state, COUNT(*) FROM denyData GROUP BY employer_state;
+ALTER TABLE statesDistribution2 CHANGE `_c1` countdeny BIGINT;
+
+
+drop table if exists statesDistribution;
+CREATE TABLE statesDistribution AS SELECT a.employer_state, a.countcerti, b.countdeny FROM statesDistribution1 a JOIN statesDistribution2 b WHERE (a.employer_state RLIKE b.employer_state);
+select * from statesDistribution;   //show
+
+//analyze wage distribution
+drop table if exists Wage;
+CREATE TABLE Wage AS SELECT case_status, floor(wage_rate/100) AS hundredwage FROM data1 ORDER BY hundredwage;
+drop table if exists WageDistribution;
+CREATE TABLE WageDistribution AS SELECT case_status, hundredwage, COUNT(*) FROM Wage GROUP BY hundredwage,case_status ORDER BY hundredwage;
+describe WageDistribution;
+select * from WageDistribution;
+
+//analyze occupation distribution
+drop table if exists occupation;
+CREATE TABLE occu AS SELECT case_status, occupation FROM data1;
+drop table if exists OccupationDistribution;
+CREATE TABLE OccupationDistribution AS SELECT case_status, occupation, COUNT(*) AS occupation_count FROM occu GROUP BY occupation,case_status ORDER BY occupation;
+describe OccupationDistribution;
+select * from OccupationDistribution;
+
+
+//generate vector [case_status, wage_rate, decision_time, employing_time, state, occupation];
+drop table if exists vector2;
+CREATE TABLE vector2 AS SELECT case_status, wage_rate, decisionTime, employTime, employer_state, occupation FROM data2;
+
+
+
+//then export data to HDFS
+
+
+

@@ -1,0 +1,8 @@
+### Unit 1 data clean - 2 source 
+#### source 1 Minkang Yang - 2006 - h1b.txt
+#### Step 1: Download data from http://www.flcdatacenter.com/CaseH1B.aspx -> Discontinued Systems -> H-1B Efile Data -> 2006(choose txt file) -> name it h1b.txt
+#### Step 2: Run Mapreduce from code in folder step1-clean/(make file, run file, check file included) on h1b.txt. The result would be tab seperated 12-column file. The result is under hdfs dfs /user/my1843/project/clean/part-r-00000 -> rename to /user/my1843/project/clean/part1
+
+#### source 2 Yubing Bai - H-1B_FY2018.xlsx
+#### Step 1: Data source is from https://www.foreignlaborcert.doleta.gov/performancedata.cfm -> Disclosure Data -> H-1B_FY2018.xlsx
+#### Step 2: Run Mapreduce from code in folder step1-clean/(make file, run file, check file included) on h1b.txt. The result would be tab seperated 12-column file. The result is under hdfs dfs /user/yb1059/project/cleanOutputUpdate -> rename and move to /user/my1843/project/clean/part2

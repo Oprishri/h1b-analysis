@@ -1,0 +1,113 @@
+hdfs dfs -ls /user/my1843/project/wordCount
+
+hdfs dfs -cat /user/my1843/project/wordCount/part-r-00000 | head -n 3
+
+
+// hive
+drop table if exists employer_name_count;
+
+create external table employer_name_count(employer_name string, count_name double) row format delimited fields terminated by '\t' location '/user/my1843/project/wordCount';
+
+create external table employer_name_count(employer_name string, count_name string) row format delimited fields terminated by '~' location '/user/my1843/project/wordCount';
+
+select * from employer_name_count;
+
+drop table if exists employer_name_count_order;
+
+CREATE TABLE employer_name_count_order AS SELECT employer_name, count_name FROM employer_name_count ORDER BY count_name DESC;
+
+select * from employer_name_count_order;
+select count(*) employer_name_count_order;
+
+-- get it to dumbo
+beeline -u jdbc:hive2://babar.es.its.nyu.edu:10000/ -n my1843 -w code --outputformat=tsv2 -e "use my1843; select * from employer_name_count_order" >> employer_name_count_order.tsv
+
+scp my1843@dumbo.es.its.nyu.edu:/home/my1843/employer_name_count_order.tsv .
+
+beeline -u jdbc:hive2://babar.es.its.nyu.edu:10000/ -n my1843 -w code --outputformat=tsv2 -e "use my1843; select * from employer_name_count_order" >> employer_name_count_order_desc.tsv
+
+scp my1843@dumbo.es.its.nyu.edu:/home/my1843/employer_name_count_order_desc.tsv .
+
+// keyword
+Administrative: 
+    management, 
+Architest And Engineer: 
+    architects, design, construction,
+Education: 
+    school, university, research, children, science
+Medical: 
+    medical, health, hospital, care, dental, healthcare, clinic, life,
+    medicine, pharmacy, mental, pharmaceuticals
+Computer: 
+    information, software, technologies, technology, engineering, pc,
+    development, data, tech, technical, electronics
+Finance and business:
+    consulting, business, financial, insurance, law, trading, 
+    bank, communications, consultants, mortgage, partners, investments,
+    holdings, investments
+Entertainment:
+    Entertainment
+
+// Category
+hdfs dfs -cat /user/my1843/project/category/part-r-00000 | head -n 3
+
+-- // merge partner's data into my beeline
+-- table with category mine
+CREATE external table data_1_c (
+case_num string,
+case_status string,
+submission_date bigint,
+decision_date bigint,
+employer_start bigint,
+employer_end bigint,
+employer_name string,
+employer_state string,
+employer_city string,
+job_title string,
+wage_rate double,
+wage_unit string,
+category double)
+row format delimited fields terminated by '~'
+location '/user/my1843/project/clean';
+
+-- table with category yubing
+REATE external table data_1_c (
+case_num string,
+case_status string,
+submission_date bigint,
+decision_date bigint,
+employer_start bigint,
+employer_end bigint,
+employer_name string,
+employer_state string,
+employer_city string,
+job_title string,
+wage_rate double,
+wage_unit string,
+category double)
+row format delimited fields terminated by '~'
+location '/user/my1843/project/clean';
+
+
+// get the merges total data
+beeline -u jdbc:hive2://babar.es.its.nyu.edu:10000/ -n my1843 -w code --outputformat=tsv2 -e "use my1843; select * from data20" >> data20.tsv
+
+
+create external table data30(
+case_num string,
+case_status string,
+submission_date bigint,
+decision_date bigint,
+employer_start bigint,
+employer_end bigint,
+employer_name string,
+employer_state string,
+employer_city string,
+job_title string,
+wage_rate double,
+wage_unit string,
+category double)
+row format delimited fields terminated by '\t'
+location '/user/my1843/project/add-one-column';
+
+
